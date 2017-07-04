@@ -90,7 +90,7 @@ for s = 1, screen.count() do
 end
 -- }}}
 
--- {{{ Menu
+-- {ß[Maß[MaÉ[MaÁ{{ Menu
 -- Create a laucher widget and a main menu
 myawesomemenu = {
    { "manual", terminal .. " -e man awesome" },
@@ -186,6 +186,24 @@ for s = 1, screen.count() do
     -- Create the wibox
     mywibox[s] = awful.wibox({ position = "top", screen = s })
 
+		-- KEYBOARD MAP INDICATOR AND CHANGER
+		kbdcfg = {}
+		kbdcfg.cmd = "setxkbmap"
+		kbdcfg.layout = { { "US", "" }, { "RU", "" }, { "UKR", "" } }
+		kbdcfg.current = 1  -- us is our default layout
+		kbdcfg.widget = wibox.widget.textbox()
+		kbdcfg.widget:set_text(" " .. kbdcfg.layout[kbdcfg.current][1] .. " ")
+		kbdcfg.switch = function ()
+			kbdcfg.current = kbdcfg.current % #(kbdcfg.layout) + 1
+			local t = kbdcfg.layout[kbdcfg.current]
+			kbdcfg.widget:set_text(" " .. t[1] .. " ")
+			os.execute( kbdcfg.cmd .. " " .. t[1] .. " " .. t[2] .. " " .. t[1] .. " " )
+		end
+
+		-- Mouse bindings
+		kbdcfg.widget:buttons(
+			awful.util.table.join(awful.button({ }, 1, function () kbdcfg.switch() end))
+		)
 
     -- Widgets that are aligned to the left
     local left_layout = wibox.layout.fixed.horizontal()
@@ -195,7 +213,8 @@ for s = 1, screen.count() do
 
     -- Widgets that are aligned to the right
     local right_layout = wibox.layout.fixed.horizontal()
-    if s == 1 then right_layout:add(wibox.widget.systray()) end
+    -- if s == 1 then right_layout:add(wibox.widget.systray()) end
+    right_layout:add(kbdcfg.widget)
     right_layout:add(mytextclock)
     right_layout:add(mylayoutbox[s])
 
@@ -219,6 +238,7 @@ root.buttons(awful.util.table.join(
 
 -- {{{ Key bindings
 globalkeys = awful.util.table.join(
+    awful.key({ modkey,           }, "t",   function () kbdcfg.switch() end),
     awful.key({ modkey,           }, "Left",   awful.tag.viewprev       ),
     awful.key({ modkey,           }, "Right",  awful.tag.viewnext       ),
     awful.key({ modkey,           }, "Escape", awful.tag.history.restore),
