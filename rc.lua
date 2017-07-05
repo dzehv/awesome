@@ -11,6 +11,9 @@ local beautiful = require("beautiful")
 local naughty = require("naughty")
 local menubar = require("menubar")
 
+-- Vicious widgets
+local vicious = require("vicious")
+
 -- Load Debian menu entries
 require("debian.menu")
 -- Additional custom lib
@@ -188,24 +191,22 @@ for s = 1, screen.count() do
     -- Create the wibox
     mywibox[s] = awful.wibox({ position = "top", screen = s })
 
-		-- KEYBOARD MAP INDICATOR AND CHANGER
-		kbdcfg = {}
-		kbdcfg.cmd = "setxkbmap"
-		kbdcfg.layout = { { "US", "" }, { "RU", "" }, { "UKR", "" } }
-		kbdcfg.current = 1  -- us is our default layout
-		kbdcfg.widget = wibox.widget.textbox()
-		kbdcfg.widget:set_text(" " .. kbdcfg.layout[kbdcfg.current][1] .. " ")
-		kbdcfg.switch = function ()
-			kbdcfg.current = kbdcfg.current % #(kbdcfg.layout) + 1
-			local t = kbdcfg.layout[kbdcfg.current]
-			kbdcfg.widget:set_text(" " .. t[1] .. " ")
-			os.execute( kbdcfg.cmd .. " " .. t[1] .. " " .. t[2] .. " " .. t[1] .. " " )
-		end
+    -- CUSTOM WIDGETS CONFIGURATION
+		kbdwidget = wibox.widget.textbox()
+		-- kbdwidget.border_width = 1
+		-- kbdwidget.border_color = beautiful.fg_normal
+		kbdwidget:set_markup(' <span color="#ddcc15"><b>ENG</b></span> ')
+		kbdwidget:set_font(font)
 
-		-- Mouse bindings
-		kbdcfg.widget:buttons(
-			awful.util.table.join(awful.button({ }, 1, function () kbdcfg.switch() end))
-		)
+		-- Volume widget
+		volumewidget = wibox.widget.textbox()
+		volumewidget:set_font(font)
+		vicious.register( volumewidget, vicious.widgets.volume, "<b>$1$2</b>" , 1, "Master" )
+
+		memwidget = wibox.widget.textbox()
+		memwidget:set_font(font)
+		vicious.register(memwidget, vicious.widgets.mem, 'MEM: $1% <span color="#cccccc"> | </span>', 13)
+		-- CUSTOM WIDGETS END
 
     -- Widgets that are aligned to the left
     local left_layout = wibox.layout.fixed.horizontal()
@@ -216,7 +217,9 @@ for s = 1, screen.count() do
     -- Widgets that are aligned to the right
     local right_layout = wibox.layout.fixed.horizontal()
     -- if s == 1 then right_layout:add(wibox.widget.systray()) end
-    right_layout:add(kbdcfg.widget)
+    -- right_layout:add(volumewidget) -- Volume widget
+    right_layout:add(memwidget) -- Memory widget
+    right_layout:add(kbdwidget) -- KBD widget
     right_layout:add(mytextclock)
     right_layout:add(mylayoutbox[s])
 
@@ -243,8 +246,8 @@ globalkeys = awful.util.table.join(
     -- Lock screen
 		-- awful.key({ modkey,           }, "l", function () awful.util.spawn("gnome-screensaver-command --lock") end),
 		awful.key({ modkey,           }, "l", function () awful.util.spawn("xscreensaver-command -lock") end),
-    -- Switch lang
-    awful.key({ modkey,           }, "t",   function () kbdcfg.switch() end),
+    -- Switch language by dbus signal
+    awful.key({ modkey,           }, "t", function () awful.util.spawn("dbus-send --dest=ru.gentoo.KbddService /ru/gentoo/KbddService ru.gentoo.kbdd.next_layout") end),
     awful.key({ modkey,           }, "Left",   awful.tag.viewprev       ),
     awful.key({ modkey,           }, "Right",  awful.tag.viewnext       ),
     awful.key({ modkey,           }, "Escape", awful.tag.history.restore),
@@ -478,5 +481,19 @@ client.connect_signal("focus", function(c) c.border_color = beautiful.border_foc
 client.connect_signal("unfocus", function(c) c.border_color = beautiful.border_normal end)
 -- }}}
 --
+		dbus.request_name("session", "ru.gentoo.kbdd")
+		dbus.add_match("session", "interface='ru.gentoo.kbdd',member='layoutChanged'")
+		dbus.connect_signal("ru.gentoo.kbdd", function(...)
+				local data = {...}
+				local layout = data[2]
+				local lts = {
+					[0] = '<span color="#ddcc15"><b>ENG</b></span>',
+					[1] = '<span color="#ddcc15"><b>RUS</b></span>',
+					[2] = '<span color="#ddcc15"><b>UKR</b></span>',
+				}
+				kbdwidget:set_markup(" ".. lts[layout] .." ")
+				end
+		)
 -- Autosart
+run_once("/usr/bin/kbdd")
 run_once("/usr/bin/xscreensaver -nosplash")

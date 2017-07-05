@@ -1,1 +1,1 @@
-Simple Awesome config with xkb widget
+Awesome WM minimalistic config
