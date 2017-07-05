@@ -13,6 +13,8 @@ local menubar = require("menubar")
 
 -- Load Debian menu entries
 require("debian.menu")
+-- Additional custom lib
+require("functions")
 
 -- {{{ Error handling
 -- Check if awesome encountered an error during startup and fell back to
@@ -238,6 +240,10 @@ root.buttons(awful.util.table.join(
 
 -- {{{ Key bindings
 globalkeys = awful.util.table.join(
+    -- Lock screen
+		-- awful.key({ modkey,           }, "l", function () awful.util.spawn("gnome-screensaver-command --lock") end),
+		awful.key({ modkey,           }, "l", function () awful.util.spawn("xscreensaver-command -lock") end),
+    -- Switch lang
     awful.key({ modkey,           }, "t",   function () kbdcfg.switch() end),
     awful.key({ modkey,           }, "Left",   awful.tag.viewprev       ),
     awful.key({ modkey,           }, "Right",  awful.tag.viewnext       ),
@@ -471,3 +477,6 @@ end)
 client.connect_signal("focus", function(c) c.border_color = beautiful.border_focus end)
 client.connect_signal("unfocus", function(c) c.border_color = beautiful.border_normal end)
 -- }}}
+--
+-- Autosart
+run_once("/usr/bin/xscreensaver -nosplash")
